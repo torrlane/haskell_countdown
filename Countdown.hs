@@ -10,9 +10,14 @@ Compile:
 
 Run:
 > ./Countdown 952 25 50 75 100 3 6
-TODO why does this not return the solution?
-[ ((((100+6)*3)*75)-50)/25 ]
-
+(((((100+6)*3)*75)-50)/25)
+(((((100+3)*6)*75)/50)+25)
+(((((100+6)*75)*3)-50)/25)
+((((75*6)*(100+3))/50)+25)
+(((100+3)*((75*6)/50))+25)
+(((((100+3)*75)*6)/50)+25)
+((((75*3)*(100+6))-50)/25)
+"Found 7 solutions"
 -}
 import System.Environment
 import Data.List
@@ -23,13 +28,15 @@ main = do
 	print $ "target: " ++ show target
 	print $ "values: " ++ show values
 	let exprs = makeExprs $ permutations values
-	-- let exprs = makeExpr values
-	-- print exprs
-	print $ findSolutions exprs target
+	let solutions = findSolutions exprs target
+	
+	-- print each solution on a newline
+	mapM_ print solutions
+	let num_solutions = length solutions
+	print $ "Found " ++ show num_solutions  ++ " solutions"
 
 {-
 Returns all the pivots of the list except those that contain an empty list.
-
 i.e. pivot [1,2,3] = [ ([1],[2,3]), ([1,2],[3]) ]
  -}
 pivot :: [Int] -> [([Int], [Int])]
@@ -65,7 +72,8 @@ makeExpr xs = [BinaryExpr (lexpr) op (rexpr) |
 			lexpr <- makeExpr left, 
 			rexpr <- makeExpr right, 
 			op <- ops,
-			valid (eval lexpr) op (eval rexpr) ]
+			valid (eval lexpr) op (eval rexpr),
+			dedupe (eval lexpr) op (eval rexpr) ]
 
 {-
 Takes a List of List of Integer, and returns all the Expressions that can
@@ -117,10 +125,16 @@ Returns true if an operator can be safely applied to the two Integers.
 Typically this is to avoid divide by zero errors.
 -}
 valid :: Int -> Op -> Int -> Bool
-valid a Divide b = b /= 0 && a >= b && (a `div` b) == 0
-valid a Minus b	= b > 0 && a >= b
-valid a Times b = b > 1 && a >= b
-valid a Plus b = b > 0 && a >= b
+valid a Divide b = b /= 0 && a > b && (a `mod` b) == 0
+valid a Minus b	= a >= b
+valid a o b = True
+
+dedupe :: Int -> Op -> Int -> Bool
+dedupe a Times b = a >= b
+dedupe a Plus b = a >= b
+dedupe a o b = True
+
+
 
 asInt c = read c :: Int
 asInts = map asInt
