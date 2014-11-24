@@ -47,7 +47,11 @@ Takes a List of Expressions and a target number and returns all the Expressions
 that evaluate to the target number
 -}
 findSolutions :: [Expr] -> Int -> [Expr]
-findSolutions es t = [ e | e <- es, eval e == t ] 
+findSolutions es t = filter (isEqual t) es
+--[ e | e <- es, eval e == t ] 
+
+isEqual :: Int -> Expr -> Bool
+isEqual t e = eval e == t
 
 {-
 This is the nuts and bults of the algorithm.
