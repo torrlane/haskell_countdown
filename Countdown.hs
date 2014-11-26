@@ -27,34 +27,33 @@ main = do
         let values = asInts $ tail args
 	print $ "target: " ++ show target
 	print $ "values: " ++ show values
-	let exprs = makeExprs $ permutations values
-	let solutions = findSolutions exprs target
+	let solutions = findSolutions values target
 	
 	-- print each solution on a newline
 	mapM_ print solutions
 	let num_solutions = length solutions
 	print $ "Found " ++ show num_solutions  ++ " solutions"
 
-{-
-Returns all the pivots of the list except those that contain an empty list.
-i.e. pivot [1,2,3] = [ ([1],[2,3]), ([1,2],[3]) ]
- -}
-pivot :: [Int] -> [([Int], [Int])]
-pivot xs =  init $ tail $ zip (inits xs) (tails xs)
 
 {-
 Takes a List of Expressions and a target number and returns all the Expressions
 that evaluate to the target number
 -}
-findSolutions :: [Expr] -> Int -> [Expr]
-findSolutions es t = filter (isEqual t) es
---[ e | e <- es, eval e == t ] 
-
-isEqual :: Int -> Expr -> Bool
-isEqual t e = eval e == t
+findSolutions :: [Int] -> Int -> [Expr]
+findSolutions values t = 
+		let es = makeExprs $ permutations values
+		in filter (isEqual t) es
+		where isEqual t e = eval e == t
 
 {-
-This is the nuts and bults of the algorithm.
+Takes a List of List of Integer, and returns all the Expressions that can
+be made from each of the Lists, without changing the order of the elements.
+-}
+makeExprs :: [[Int]] -> [Expr]
+makeExprs xss = [ e | xs <- xss, e <- makeExpr xs]
+
+{-
+This is the nuts and bolts of the algorithm.
 
 Takes a list of Integers and generates all the possible Expr's that
 can be generated from them without changing the order of the Integers
@@ -77,14 +76,15 @@ makeExpr xs = [BinaryExpr (lexpr) op (rexpr) |
 			rexpr <- makeExpr right, 
 			op <- ops,
 			valid (eval lexpr) op (eval rexpr),
-			dedupe (eval lexpr) op (eval rexpr) ]
+ 			dedupe (eval lexpr) op (eval rexpr) ]
 
 {-
-Takes a List of List of Integer, and returns all the Expressions that can
-be made from each of the Lists, without changing the order of the elements.
--}
-makeExprs :: [[Int]] -> [Expr]
-makeExprs xss = [ e | xs <- xss, e <- makeExpr xs]
+Returns all the pivots of the list except those that contain an empty list.
+i.e. pivot [1,2,3] = [ ([1],[2,3]), ([1,2],[3]) ]
+ -}
+pivot :: [Int] -> [([Int], [Int])]
+pivot xs =  init $ tail $ zip (inits xs) (tails xs)
+
 
 {- 
 The Expr datatype represents a mathematical Expression.
@@ -129,16 +129,14 @@ Returns true if an operator can be safely applied to the two Integers.
 Typically this is to avoid divide by zero errors.
 -}
 valid :: Int -> Op -> Int -> Bool
-valid a Divide b = b /= 0 && a > b && (a `mod` b) == 0
-valid a Minus b	= a >= b
+valid a Divide b = b /= 0 && (a `mod` b) == 0
 valid a o b = True
 
 dedupe :: Int -> Op -> Int -> Bool
+dedupe a Divide b = a > b
 dedupe a Times b = a >= b
 dedupe a Plus b = a >= b
-dedupe a o b = True
-
-
+dedupe a Minus b = a >= b
 
 asInt c = read c :: Int
 asInts = map asInt
